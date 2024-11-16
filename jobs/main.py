@@ -98,13 +98,26 @@ def generate_vehicle_data(device_id):
         'year':2024,
         'fuelType': 'Hybrid'
     }
-
+def generate_emergency_incident_data(device_id,timestamp,location):
+    return{
+        'id':uuid.uuid4(),
+        'device_id': device_id,
+        'incidentId':uuid.uuid4,
+        'type':random.choice(['Accident','Fire','Medical','Police','None']),
+        'timestamp':timestamp,
+        'location': location,
+        'status': random.choice(['Active','Resolved']),
+        'description':'Description of the incident'
+    }
 def simulate_journey(producer, device_id):
     while True:
         vehicle_data= generate_vehicle_data(device_id)
         gps_data= generate_gps_data(device_id, vehicle_data['timestamp'])
         traffic_camera_data=generate_traffic_camera_data(device_id,vehicle_data['timestamp'],vehicle_data['location'],'Nikon123'),
-        weather_data= generate_weather_data(device_id,vehicle_data['timestamp'],vehicle_data)
+        weather_data= generate_weather_data(device_id,vehicle_data['timestamp'],vehicle_data),
+        emergency_incident_data= generate_emergency_incident_data(device_id,vehicle_data['timestamp'],vehicle_data['location'])
+    
+        
         break
 
 if __name__ == "__main__":
