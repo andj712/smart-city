@@ -25,8 +25,25 @@ GPS_TOPIC=os.getenv('GPS_TOPIC','gps_data')
 TRAFFIC_TOPIC=os.getenv('TRAFFIC_TOPIC','traffic_data')
 WEATHER_TOPIC=os.getenv('EMERGENCY_TOPIC','emergency_data')
 
+random.seed(42)
 start_time=datetime.now()
 start_location=POZEGA_COORDINATES.copy()
+
+def generate_weather_data(device_id,timestamp,location):
+    return{
+        'id':uuid.uuid4,
+        'deviceId': device_id,
+        'location': location,
+        'timestamp': timestamp,
+        'temperature': random.uniform(-5,25),
+        'weatherCondition': random.choice(['Sunny','Cloudy','Rain','Snow']),
+        'precipitation': random.uniform(0,25),
+        'windSpeed': random.uniform(0,100),
+        'humidity': random.randint(0,100),
+        'airQualityIndex':random.uniform(0,500),
+
+
+    }
 
 def generate_gps_data(device_id, timestamp,vehicle_type='private'):
     return{
@@ -38,11 +55,12 @@ def generate_gps_data(device_id, timestamp,vehicle_type='private'):
         'vehicleType': vehicle_type
     }
 
-def generate_traffic_camera_data(device_id,timestamp,camera_id):
+def generate_traffic_camera_data(device_id,timestamp,location,camera_id):
     return{
         'id':uuid.uuid4,
         'deviceId':device_id,
         'cameraId':camera_id,
+        'location': location,
         'timestamp': timestamp,
         'snapshot': 'Base64EncodedString'
     }
@@ -85,7 +103,7 @@ def simulate_journey(producer, device_id):
     while True:
         vehicle_data= generate_vehicle_data(device_id)
         gps_data= generate_gps_data(device_id, vehicle_data['timestamp'])
-        traffic_camera_data=generate_traffic_camera_data(device_id,vehicle_data['timestamp'],'Nikon123')
+        traffic_camera_data=generate_traffic_camera_data(device_id,vehicle_data['timestamp'],vehicle_data['location'],'Nikon123'),
         weather_data= generate_weather_data(device_id,vehicle_data['timestamp'],vehicle_data)
         break
 
