@@ -2,6 +2,7 @@ import os
 import random
 from confluent_kafka import SerializingProducer
 import simplejson as json
+import time
 from datetime import datetime, timedelta
 import uuid
 
@@ -19,11 +20,12 @@ LATITUDE_INCREMENT=(BEOGRAD_COORDINATES['latitude']-POZEGA_COORDINATES['latitude
 LONGITUDE_INCREMENT=(BEOGRAD_COORDINATES['longitude']-POZEGA_COORDINATES['longitude'])/100
 
 #varijable za konfiguraciju
-KAFKA_BOOTSTRAP_SERVERS=os.getenv('KAFKA_BOOTSTRAP_SERVERS','localhost:9092')
+KAFKA_BOOTSTRAP_SERVERS=os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
 VEHICLE_TOPIC=os.getenv('VEHICLE_TOPIC', 'vehicle_data')
 GPS_TOPIC=os.getenv('GPS_TOPIC','gps_data')
 TRAFFIC_TOPIC=os.getenv('TRAFFIC_TOPIC','traffic_data')
-WEATHER_TOPIC=os.getenv('EMERGENCY_TOPIC','emergency_data')
+WEATHER_TOPIC=os.getenv('WEATHER_TOPIC','weather_data')
+EMERGENCY_TOPIC=os.getenv('EMERGENCY_TOPIC','emergency_data')
 
 random.seed(42)
 start_time=datetime.now()
@@ -117,13 +119,48 @@ def simulate_journey(producer, device_id):
         weather_data= generate_weather_data(device_id,vehicle_data['timestamp'],vehicle_data),
         emergency_incident_data= generate_emergency_incident_data(device_id,vehicle_data['timestamp'],vehicle_data['location'])
     
-        
-        break
+        if(vehicle_data['location'][0]>=BEOGRAD_COORDINATES['latitude']
+                and vehicle_data['location'][1]<=BEOGRAD_COORDINATES['longitude']):
+                print('Vehicle has reached Beograd. Simulacija se zavrsava...')
+                break
+
+
+        produce_data_to_kafka(producer, VEHICLE_TOPIC,vehicle_data)
+        produce_data_to_kafka(producer, GPS_TOPIC,vehicle_data)
+        produce_data_to_kafka(producer, TRAFFIC_TOPIC,vehicle_data)
+        produce_data_to_kafka(producer, WEATHER_TOPIC,vehicle_data)
+        produce_data_to_kafka(producer, EMERGENCY_TOPIC,vehicle_data)
+
+        time.sleep(5)
+def json_serializer(obj):
+    if isinstance(obj,uuid.UUID):
+        return str(obj)
+    raise  TypeError(f'Object of type {obj.__class__.__name__} is not JSON serializable')
+
+def delivery_report(err,msg):
+    if err is not None:
+        print(f'Message delivery failed:{err}')
+    else:
+        print(f'Message delivered to{msg.topic()}[{msg.partition()}]')
+def produce_data_to_kafka(producer,topic,data):
+    producer.produce(
+        topic,
+        key=str(data['id']),
+        value=json.dumps(data,default=json_serializer).encode('utf-8'),
+        on_delivery=delivery_report
+    )
+    producer.flush()
+
 
 if __name__ == "__main__":
     producer_config={
         'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS,
-        'error_cb': lambda err: print(f'Kafka error: {err}')
+        'error_cb': lambda err: print(f'Kafka error: {err}'),
+        'security.protocol': 'PLAINTEXT',
+        'client.id': 'python-producer',
+        'socket.timeout.ms': 10000,
+        'request.timeout.ms': 20000,
+        'metadata.max.age.ms': 300000
     }   
     producer= SerializingProducer(producer_config)
 

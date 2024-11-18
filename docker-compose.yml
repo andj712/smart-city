@@ -13,7 +13,7 @@ x-spark-common: &spark-common
     SPARK_WORKER_MEMORY: 1g
     SPARK_MASTER_URL: spark://spark-master:7077
   networks:
-    - datamasterylab
+    - smart-city-network
 
 
 services:
@@ -33,7 +33,7 @@ services:
       timeout: 5s
       retries: 5
     networks: 
-      - datamasterylab
+      - smart-city-network
   broker:
     image: confluentinc/cp-server:7.4.0
     hostname: broker
@@ -42,23 +42,26 @@ services:
       zookeeper:
         condition: service_healthy
     ports:
-      - "9892:9092"
-      - "9101:9181"
+      - "9092:9092"
+      - "9101:9101"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
-      KAFKA_OFFSET_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_CONFLUENT_BALANCE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICAS_FACTOR: 1
       KAFKA_JMX_PORT: 9101
       KAFKA_JMX_HOSTNAME: localhost
       KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true" #naknadno dodate ova i dve naredne
+      KAFKA_NUM_PARTITIONS: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
       CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: broker:29092
       CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1
       CONFLUENT_METRICS_ENABLE: 'false'
@@ -71,7 +74,7 @@ services:
       timeout: 5s
       retries: 5
     networks: 
-      - datamasterylab
+      - smart-city-network
   spark-master:
     image: bitnami/spark:latest
     volumes: 
@@ -81,7 +84,7 @@ services:
       - "9090:8080"
       - "7077:7077"
     networks:
-      - datamasterylab
+      - smart-city-network
   spark-worker-1:
     <<: *spark-common
   spark-worker-2:
@@ -91,4 +94,4 @@ services:
 
 
 networks:
-  datamasterylab:
+  smart-city-network:
